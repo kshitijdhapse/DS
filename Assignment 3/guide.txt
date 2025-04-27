@@ -35,3 +35,141 @@ mpicc name of the program
 mpirun -np 4 ./a.out
 or run below command
 mpirun --oversubscribe -np 4 ./a.out
+
+
+variations:
+// 2_1_sum.c
+#include <mpi.h>
+#include <stdio.h>
+
+int main() {
+    int rank, size, num[100], local_num, local_sum, final_sum;
+
+    MPI_Init(NULL, NULL);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    if(rank == 0) {
+        for(int i = 0; i < size; i++) {
+            num[i] = i + 1;  // Fill array 1,2,3,...
+        }
+    }
+
+    MPI_Scatter(num, 1, MPI_INT, &local_num, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    printf("local sum at rank %d is %d\n", rank, local_num);
+
+    MPI_Reduce(&local_num, &final_sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    if(rank == 0) {
+        printf("final sum = %d\n", final_sum);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+// 2_2_multiplication.c
+#include <mpi.h>
+#include <stdio.h>
+
+int main() {
+    int rank, size, num[100], local_num, local_product, final_product;
+
+    MPI_Init(NULL, NULL);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    if(rank == 0) {
+        for(int i = 0; i < size; i++) {
+            num[i] = i + 1;  // Fill array 1,2,3,...
+        }
+    }
+
+    MPI_Scatter(num, 1, MPI_INT, &local_num, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    printf("local multiplication at rank %d is %d\n", rank, local_num);
+
+    MPI_Reduce(&local_num, &final_product, 1, MPI_INT, MPI_PROD, 0, MPI_COMM_WORLD);
+
+    if(rank == 0) {
+        printf("final product = %d\n", final_product);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+// 2_3_average_random.c
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+int main() {
+    int rank, size, numbers[100], local_num, gathered[100];
+    double local_avg, final_avg = 0.0;
+
+    MPI_Init(NULL, NULL);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    if(rank == 0) {
+        srand(time(NULL));
+        for(int i = 0; i < size; i++) {
+            numbers[i] = rand() % 100;  // random 0–99
+            printf("Random number[%d]: %d\n", i, numbers[i]);
+        }
+    }
+
+    MPI_Scatter(numbers, 1, MPI_INT, &local_num, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    local_avg = (double)local_num; // single element, average is the number itself
+
+    MPI_Gather(&local_avg, 1, MPI_DOUBLE, gathered, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    if(rank == 0) {
+        for(int i = 0; i < size; i++) {
+            final_avg += gathered[i];
+        }
+        final_avg = final_avg / size;
+        printf("Final average = %f\n", final_avg);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+// 2_4_reciprocal.c
+#include <mpi.h>
+#include <stdio.h>
+
+int main() {
+    int rank, size, num[100];
+    int local_num;
+    double local_reciprocal, gathered[100];
+
+    MPI_Init(NULL, NULL);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    if(rank == 0) {
+        for(int i = 0; i < size; i++) {
+            num[i] = i + 1;  // Fill array 1,2,3,...
+        }
+    }
+
+    MPI_Scatter(num, 1, MPI_INT, &local_num, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    local_reciprocal = 1.0 / local_num;
+
+    MPI_Gather(&local_reciprocal, 1, MPI_DOUBLE, gathered, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    if(rank == 0) {
+        printf("Reciprocal array:\n");
+        for(int i = 0; i < size; i++) {
+            printf("1/%d = %f\n", i + 1, gathered[i]);
+        }
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+
